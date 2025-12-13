@@ -60,19 +60,18 @@ def create_drum_kit(audio_files, output_dir, max_files, use_symlinks=False):
     print(f"{action} {num_files} files...")
     
     # Copy or symlink files to kit directory
-    for i, source_file in enumerate(selected_files, 1):
+    for source_file in selected_files:
         # Get just the filename from the full path
         filename = os.path.basename(source_file)
-        # Add number prefix to avoid name conflicts
-        new_filename = f"{i:02d}_{filename}"
-        dest_path = os.path.join(kit_dir, new_filename)
+        # Keep original filename exactly as it is
+        dest_path = os.path.join(kit_dir, filename)
         
         try:
             if use_symlinks:
                 os.symlink(source_file, dest_path)
             else:
                 shutil.copy2(source_file, dest_path)
-            print(f"  {i:2d}. {filename}")
+            print(f"    {filename}")
         except Exception as e:
             print(f"  Error {'linking' if use_symlinks else 'copying'} {filename}: {e}")
             return False

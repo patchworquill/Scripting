@@ -4,11 +4,13 @@ Folder Flattener Tool
 
 Takes all files from nested subdirectories and moves/copies them to a single flat directory.
 Handles file name conflicts, file filtering, and copy vs move operations.
+Supports saving/loading configurations for repeated use.
 """
 
 import os
 import shutil
 import json
+import hashlib
 from pathlib import Path
 
 
@@ -97,6 +99,39 @@ def get_all_files(input_dir, extensions=None):
     return all_files
 
 
+def files_are_identical(file1, file2):
+    """
+    Compare two files to see if they are identical by checking file size first,
+    then comparing content hashes for efficiency.
+    
+    Args:
+        file1: Path to first file
+        file2: Path to second file
+    
+    Returns:
+        True if files are identical, False otherwise
+    """
+    try:
+        # Quick size check first
+        if os.path.getsize(file1) != os.path.getsize(file2):
+            return False
+        
+        # If sizes match, compare file hashes
+        def get_file_hash(filepath):
+            hash_sha256 = hashlib.sha256()
+            with open(filepath, "rb") as f:
+                # Read file in chunks for memory efficiency
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
+            return hash_sha256.hexdigest()
+        
+        return get_file_hash(file1) == get_file_hash(file2)
+        
+    except Exception as e:
+        print(f"  Error comparing files: {e}")
+        return False
+
+
 def handle_name_conflict(dest_path):
     """
     Handle file name conflicts by adding a number suffix.
@@ -166,17 +201,26 @@ def flatten_folder(input_dir, output_dir, extensions=None, move_files=False, con
             if os.path.exists(dest_path):
                 results['conflicts'] += 1
                 
-                if conflict_resolution == "skip":
-                    print(f"  Skipping (exists): {filename}")
+                # Check if files are actually identical
+                if files_are_identical(source_file, dest_path):
+                    print(f"  Skipping (identical file): {filename}")
                     results['skipped'] += 1
                     continue
-                elif conflict_resolution == "rename":
-                    dest_path = handle_name_conflict(dest_path)
-                    new_filename = os.path.basename(dest_path)
-                    print(f"  Renaming: {filename} -> {new_filename}")
+                
+                # Files have same name but different content - always keep both by renaming
+                dest_path = handle_name_conflict(dest_path)
+                new_filename = os.path.basename(dest_path)
+                print(f"  Renaming (different content): {filename} -> {new_filename}")
+                
+            else:
+                # No conflict, handle other conflict resolution options for truly identical cases
+                if conflict_resolution == "skip":
+                    # This only applies to identical files now
+                    pass  # We already handle identical files above
                 elif conflict_resolution == "overwrite":
-                    print(f"  Overwriting: {filename}")
-                # For overwrite, we just proceed with the original dest_path
+                    # This only applies to identical files now  
+                    pass  # We already handle identical files above
+                # For any case, we proceed with the dest_path (original or renamed)
             
             # Move or copy the file
             if move_files:

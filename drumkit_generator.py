@@ -27,6 +27,10 @@ def get_audio_files(input_dir, extensions):
     
     for root, dirs, files in os.walk(input_dir):
         for file in files:
+            # Skip macOS resource fork files and Ableton analysis files
+            if file.startswith('._') or file.endswith('.asd'):
+                continue
+            
             file_path = os.path.join(root, file)
             # Get file extension without the dot
             file_ext = os.path.splitext(file)[1].lower().strip('.')
@@ -131,8 +135,8 @@ def categorize_audio_files(audio_files):
     patterns = {
         'kick': ['kick', 'bd', 'bass', 'bassdrum', 'bass drum', '808', 'sub', 'boom'],
         'snare': ['snare', 'sn', 'snr', 'snap', 'rim'],
-        'hihat_closed': ['chh', 'closed hat', 'closedhat', 'closed hihat', 'hihat closed', 'hh closed', 'hhc'],
-        'hihat_open': ['ohh', 'open hat', 'openhat', 'open hihat', 'hihat open', 'hh open', 'hho'],
+        'hihat_closed': ['chh', 'closed hat', 'closedhat', 'closedhh', 'closed hihat', 'hihat closed', 'hh closed', 'hhc'],
+        'hihat_open': ['ohh', 'open hat', 'openhat', 'openhh', 'open hihat', 'hihat open', 'hh open', 'hho'],
         'tom': ['tom', 'tm', 'floor tom', 'floortom', 'hi tom', 'hitom', 'mid tom', 'midtom'],
         'clap': ['clap', 'cp', 'handclap', 'hand clap'],
         'shaker': ['shaker', 'shake', 'shk', 'tambourine', 'tamb'],
